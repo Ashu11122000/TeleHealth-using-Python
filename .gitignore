@@ -4,3 +4,6 @@
 # .env file
 .env
 .env.example
+
+## python-versions file
+.python-versions
