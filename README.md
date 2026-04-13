@@ -653,3 +653,219 @@ Work inside the following directories:
 - App runs successfully
 - Database connection works
 - Configuration is properly managed
+
+---
+
+## PHASE 2 — AUTHENTICATION SYSTEM
+
+---
+
+## GOAL
+
+Build a secure authentication system so that:
+
+- Users can register  
+- Users can login  
+- System returns a JWT token  
+- Protected APIs can identify the user  
+
+---
+
+## BIG PICTURE (HOW AUTH WORKS)
+
+### Flow
+
+User → Register → Stored in DB
+User → Login → Verify Password → Generate JWT
+User → Sends JWT → Backend verifies → Access granted
+
+
+This is how real-world applications (e.g., Netflix, Swiggy) handle authentication.
+
+---
+
+## WHAT YOU WILL BUILD
+
+This phase is divided into 6 building blocks:
+
+---
+
+## 1. USER MODEL (DATABASE)
+
+### Purpose
+Store user data securely.
+
+### File
+
+`app/models/user.py`
+
+
+### Fields
+- id  
+- email  
+- hashed_password (never store plain passwords)  
+- role (patient / doctor / admin)  
+- is_active  
+- created_at  
+
+---
+
+## 2. PASSWORD SECURITY
+
+### Purpose
+Ensure passwords are securely stored and verified.
+
+### File
+
+`app/core/security.py`
+
+
+### Implementation
+- Hash password before storing in database  
+- Verify password during login  
+
+### Libraries Used
+- passlib  
+- bcrypt  
+
+---
+
+## 3. JWT TOKEN SYSTEM
+
+### Purpose
+Enable authentication without server-side sessions.
+
+### File
+`app/core/security.py`
+
+
+### Implementation
+- Create JWT token  
+- Decode JWT token  
+- Handle token expiration  
+
+### JWT Payload Example
+```json
+{
+  "sub": "user_id",
+  "exp": "expiry_time"
+}
+```
+
+---
+
+## 4. Pydantic Schemas
+
+### Purpose
+Validate request and response data.
+
+### Files
+
+- `app/schemas/user.py`  
+- `app/schemas/auth.py`  
+
+### Examples
+
+#### UserCreate
+- email  
+- password  
+
+#### UserLogin
+- email  
+- password  
+
+#### TokenResponse
+- access_token  
+- token_type  
+
+---
+
+## 5. Auth Service (Business Logic)
+
+### Purpose
+Separate business logic from API layer.
+
+### File
+
+- `app/services/auth_service.py`
+
+### Functions
+
+#### register_user()
+- Hash password  
+- Save user to database  
+
+#### login_user()
+- Validate email  
+- Verify password  
+- Generate JWT token  
+
+---
+
+## 6. Auth API (Routes)
+
+### Purpose
+Expose authentication endpoints.
+
+### File
+
+- `app/api/v1/endpoints/auth.py`
+
+### Endpoints
+
+#### Register
+`POST /auth/register`
+
+#### Login
+`POST /auth/login`
+
+
+---
+
+## Protected Routes Dependency
+
+You will later implement:
+
+`get_current_user()`
+
+
+### Responsibilities
+- Extract JWT from request  
+- Validate token  
+- Fetch user  
+- Inject user into route  
+
+---
+
+## How Everything Connects
+
+API → Service → Repository (later) → Database
+↓
+Security (JWT + Password Hashing)
+
+
+---
+
+## Important Rules
+
+### Never
+- Store plain passwords  
+- Return passwords in API responses  
+
+### Always
+- Hash passwords  
+- Use JWT for authentication  
+- Validate all inputs  
+
+---
+
+## Expected Output
+
+After completing this phase:
+
+- User registration works  
+- User login works  
+- JWT token is generated  
+- Passwords are securely hashed  
+- Authentication system is functional and secure  
+
