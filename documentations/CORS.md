@@ -103,12 +103,3 @@ allow_headers=["*"]
 
 ---
 
-## Best Practices
-
--   Avoid using "\*" in production
--   Specify trusted domains only
--   Limit methods and headers
--   Enable credentials only if required
-
----
-
