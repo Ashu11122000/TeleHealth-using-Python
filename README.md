@@ -869,3 +869,655 @@ After completing this phase:
 - Passwords are securely hashed  
 - Authentication system is functional and secure  
 
+---
+
+# PHASE 3 — REPOSITORY LAYER (DATA ACCESS LAYER)
+
+---
+
+## Overview
+
+Phase 3 focuses on implementing the **Repository Layer**, which acts as an abstraction between the **Service Layer (business logic)** and the **Database (SQLAlchemy ORM)**.
+
+This layer ensures that:
+
+* Database operations are isolated
+* Code is clean, modular, and maintainable
+* Future changes (e.g., switching DB) are easier
+
+---
+
+## Goal
+
+The goal of this phase is to:
+
+* Separate database queries from business logic
+* Implement reusable CRUD operations
+* Follow clean architecture principles
+* Improve scalability and maintainability
+
+---
+
+## Why Repository Layer?
+
+In Phase 2, your service directly interacted with the database:
+
+Service → Database
+
+This is not ideal for large-scale applications.
+
+Now we improve it:
+
+API → Service → Repository → Database
+
+### Benefits
+
+* Cleaner code structure
+* Reusability of database logic
+* Easier testing (mock repositories)
+* Better separation of concerns
+
+---
+
+## Responsibilities of Repository Layer
+
+The Repository Layer is responsible for:
+
+* CRUD operations (Create, Read, Update, Delete)
+* Query abstraction
+* Database interaction only
+* No business logic
+
+---
+
+## Folder Structure
+
+All repositories will be placed inside:
+
+app/repositories/
+
+Example structure:
+
+app/repositories/
+│
+├── user_repository.py
+├── doctor_repository.py
+├── appointment_repository.py
+├── medical_repository.py
+├── ai_repository.py
+└── **init**.py
+
+---
+
+## Core Concept
+
+Each repository handles one model.
+
+Example:
+
+* UserRepository → users table
+* AppointmentRepository → appointments table
+
+---
+
+## Implementation Plan
+
+Phase 3 will be implemented in steps:
+
+---
+
+### Step 1 — Create User Repository
+
+File:
+
+app/repositories/user_repository.py
+
+Responsibilities:
+
+* Create user
+* Get user by email
+* Get user by ID
+
+---
+
+### Step 2 — Move DB Logic from Service to Repository
+
+Before (Phase 2):
+
+Service directly queries DB
+
+After (Phase 3):
+
+Service calls repository functions
+
+---
+
+### Step 3 — Update Auth Service
+
+Old flow:
+
+Service → DB
+
+New flow:
+
+Service → Repository → DB
+
+---
+
+### Step 4 — Add More Repositories (Later)
+
+* AppointmentRepository
+* MedicalRepository
+* DoctorRepository
+* AIRepository
+
+---
+
+## Example Flow (After Phase 3)
+
+User Login Request:
+
+Client → API → AuthService → UserRepository → Database
+
+---
+
+## Example Responsibilities Breakdown
+
+### API Layer
+
+* Handles request/response
+* Calls service
+
+### Service Layer
+
+* Contains business logic
+* Calls repository
+
+### Repository Layer
+
+* Handles database queries only
+
+### Database Layer
+
+* Stores data
+
+---
+
+## Important Rules
+
+### Repository Layer SHOULD:
+
+* Use SQLAlchemy queries
+* Return database objects
+* Be reusable
+
+### Repository Layer SHOULD NOT:
+
+* Contain business logic
+* Handle HTTP requests
+* Perform validations
+
+---
+
+## Example Operations
+
+UserRepository will handle:
+
+* create_user()
+* get_user_by_email()
+* get_user_by_id()
+
+---
+
+## Expected Output of Phase 3
+
+After completing this phase:
+
+* Database logic is separated from services
+* Codebase follows clean architecture
+* Auth system uses repository layer
+* Project becomes more scalable and maintainable
+
+---
+
+## Transition from Phase 2 to Phase 3
+
+Before:
+
+AuthService → DB
+
+After:
+
+AuthService → UserRepository → DB
+
+---
+
+## What You Will Achieve
+
+* Industry-level backend structure
+* Clean architecture implementation
+* Better code readability and testing capability
+
+---
+
+# PHASE 4 — USER MANAGEMENT & ROLE-BASED ACCESS CONTROL (RBAC)
+
+---
+
+## Overview
+
+Phase 4 focuses on building a complete **User Management System** along with **Role-Based Access Control (RBAC)**.
+
+This ensures that different types of users (patients, doctors, admins) have controlled access to system features.
+
+---
+
+## Goal
+
+* Implement user profile management
+* Enforce role-based permissions
+* Secure protected routes
+* Extend authentication system
+
+---
+
+## Key Features
+
+* Get current user profile
+* Update user profile
+* Role-based route protection
+* Admin-only and doctor-only access
+
+---
+
+## Roles in System
+
+* patient
+* doctor
+* admin
+
+---
+
+## Implementation Plan
+
+### Step 1 — User APIs
+
+File:
+app/api/v1/endpoints/users.py
+
+Endpoints:
+
+* GET /users/me
+* PUT /users/update
+
+---
+
+### Step 2 — Role-Based Dependency
+
+File:
+app/api/deps.py
+
+Add:
+
+* get_current_active_user
+* role checker (require_role)
+
+---
+
+### Step 3 — Protect Routes
+
+Examples:
+
+* Only doctor can access appointment slots
+* Only admin can manage users
+
+---
+
+## Example Flow
+
+Client → API → Dependency (JWT + Role Check) → Service → Repository → DB
+
+---
+
+## Expected Output
+
+* Secure user endpoints
+* Role-based restrictions working
+* Clean separation of auth and authorization
+
+---
+
+## PHASE 5 — APPOINTMENT MANAGEMENT SYSTEM
+
+---
+
+## Overview
+
+This phase introduces the **core telehealth feature**: appointment booking between patients and doctors.
+
+---
+
+## Goal
+
+* Allow patients to book appointments
+* Prevent double booking
+* Manage appointment lifecycle
+
+---
+
+## Key Features
+
+* Book appointment
+* Cancel appointment
+* View appointments
+* Check doctor availability
+
+---
+
+## Database Fields
+
+appointments table:
+
+* id
+* patient_id
+* doctor_id
+* date_time
+* status
+
+---
+
+## Implementation Plan
+
+### Step 1 — Appointment Model (if not done)
+
+File:
+app/models/appointment.py
+
+---
+
+### Step 2 — Repository
+
+File:
+app/repositories/appointment_repository.py
+
+Functions:
+
+* create_appointment()
+* get_appointments_by_user()
+* check_availability()
+
+---
+
+### Step 3 — Service Layer
+
+File:
+app/services/appointment_service.py
+
+Logic:
+
+* Validate doctor exists
+* Check availability
+* Prevent conflicts
+
+---
+
+### Step 4 — API Layer
+
+File:
+app/api/v1/endpoints/appointments.py
+
+Endpoints:
+
+* POST /appointments/book
+* GET /appointments
+* DELETE /appointments/{id}
+
+---
+
+## Expected Output
+
+* Appointment system fully functional
+* No double booking
+* Clean architecture followed
+
+---
+
+## PHASE 6 — MEDICAL RECORDS SYSTEM
+
+---
+
+## Overview
+
+This phase enables storing and managing **patient medical records**.
+
+---
+
+## Goal
+
+* Store medical history
+* Link records with users
+* Enable doctors to access patient records
+
+---
+
+## Key Features
+
+* Add medical record
+* View medical history
+* Secure access (doctor/patient only)
+
+---
+
+## Database Fields
+
+medical_records:
+
+* id
+* user_id
+* title
+* description
+* created_at
+
+---
+
+## Implementation Plan
+
+### Step 1 — Repository
+
+File:
+app/repositories/medical_repository.py
+
+---
+
+### Step 2 — Service
+
+File:
+app/services/medical_service.py
+
+---
+
+### Step 3 — API
+
+File:
+app/api/v1/endpoints/medical_records.py
+
+Endpoints:
+
+* POST /records
+* GET /records/{user_id}
+
+---
+
+## Expected Output
+
+* Medical data stored securely
+* Access controlled by roles
+
+---
+
+## PHASE 7 — AI SYMPTOM ANALYSIS MODULE (RULE-BASED)
+
+---
+
+## Overview
+
+This phase introduces a basic **AI module** for symptom analysis using rule-based logic.
+
+---
+
+## Goal
+
+* Accept symptoms from user
+* Analyze risk level
+* Provide suggestions
+
+---
+
+## Key Features
+
+* Input symptoms
+* Risk classification (Low / Medium / High)
+* Basic recommendations
+
+---
+
+## Database Tables
+
+* ai_assessments
+* symptoms
+
+---
+
+## Implementation Plan
+
+### Step 1 — Repository
+
+File:
+app/repositories/ai_repository.py
+
+---
+
+### Step 2 — Service
+
+File:
+app/services/ai_service.py
+
+Logic:
+
+* Rule-based engine
+* Risk scoring
+
+---
+
+### Step 3 — API
+
+File:
+app/api/v1/endpoints/ai.py
+
+Endpoints:
+
+* POST /ai/analyze
+
+---
+
+## Expected Output
+
+* Working AI module (basic)
+* Extendable to ML in future
+
+---
+
+## PHASE 8 — TESTING, DOCKERIZATION & PRODUCTION READINESS
+
+---
+
+## Overview
+
+This phase prepares the application for **real-world deployment**.
+
+---
+
+## Goal
+
+* Ensure code reliability
+* Containerize application
+* Prepare for deployment
+
+---
+
+## Key Features
+
+* Unit testing
+* API testing
+* Docker setup
+* Environment configuration
+
+---
+
+## Implementation Plan
+
+### Step 1 — Unit Testing
+
+Folder:
+app/tests/
+
+Tools:
+
+* pytest
+
+---
+
+### Step 2 — Dockerization
+
+Files:
+
+* Dockerfile
+* docker-compose.yml
+
+Services:
+
+* FastAPI app
+* PostgreSQL DB
+
+---
+
+### Step 3 — Environment Setup
+
+* .env
+* .env.example
+
+---
+
+### Step 4 — Production Improvements
+
+* Logging
+* Error handling
+* Rate limiting
+* Security hardening
+
+---
+
+## Expected Output
+
+* Fully testable backend
+* Dockerized system
+* Ready for deployment
+
+---
+
+## Final Architecture (After All Phases)
+
+Client → API → Service → Repository → ORM → Database
+
+---
+
+## Conclusion
+
+By completing all phases, you will have:
+
+* A production-ready backend system
+* Clean architecture implementation
+* Scalable and maintainable codebase
+* Foundation for AI integration and microservices
+
+---
