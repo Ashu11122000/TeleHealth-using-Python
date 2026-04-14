@@ -5,4 +5,4 @@ from sqlalchemy.orm import declarative_base
 # Base: This is the parent class for all database models (tables)
 # Every model (like User, Product, etc.) will inherit from this Base class
 # It helps SQLAlchemy keep track of all tables and map them to the database schema
-Base = declarative_base
+Base = declarative_base()
