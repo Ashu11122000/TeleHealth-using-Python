@@ -1,12 +1,10 @@
 # Virtual environment
 .venv
 
-# coverage
-.early.coverage
-
-# Environment Variables
+# environment variables
 .env
 .env.example
 
 # python versions
 .python-versions
+
