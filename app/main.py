@@ -10,14 +10,16 @@ from app.api.v1.api import api_router
 
 
 # Create FastAPI app instance
+# IMPORTANT: This variable MUST be named "app" for Uvicorn
 app = FastAPI(
     
     # title: Name of your API (visible in docs)
     title="Telehealth Backend",
     
     # version: API version for tracking changes  
-    version="1.0.0"  
+    version="1.0.0"
 )
+
 
 # CORS CONFIGURATION
 # CORS setup
@@ -43,10 +45,12 @@ app.add_middleware(
     allow_headers=["*"],  
 )
 
+
 # ROUTER REGISTRATION (VERY IMPORTANT)
 # This connects all API routes (like /auth/register, /auth/login)
 # Without this, your endpoints will NOT work
 app.include_router(api_router)
+
 
 # ROOT ENDPOINT (HEALTH CHECK)
 # Defines a GET endpoint at "/"
