@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 # Import settings object which contains DATABASE_URL from .env
 from app.core.config import settings
 
+
 engine = create_engine(
     
     # DATABASE_URL: Connection string used to connect to PostgreSQL
@@ -18,6 +19,7 @@ engine = create_engine(
     # Useful for debugging and understanding what queries are being executed
     echo = True  # Shows SQL logs
 )
+
 
 # SessionLocal: This is a session factory
 # Each time you call SessionLocal(), it creates a new DB session instance
@@ -34,3 +36,20 @@ SessionLocal = sessionmaker(
     # bind: Connects this session to the database engine
     bind = engine
 )
+
+
+# 🔥 ADD THIS (IMPORTANT)
+# get_db: Dependency function used in FastAPI routes
+# It provides a database session and ensures it is properly closed after use
+def get_db():
+    
+    # Create a new database session
+    db = SessionLocal()
+    
+    try:
+        # Yield the session to the route (FastAPI handles this automatically)
+        yield db
+    
+    finally:
+        # Close the session after request is completed (prevents memory leaks)
+        db.close()
