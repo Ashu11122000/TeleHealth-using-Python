@@ -34,9 +34,15 @@ class Settings(BaseSettings):
 
 # This makes get_settings() behave like a singleton
 # Singleton: A design pattern where only one instance of a class is created and reused
-@ lru_cache
+@lru_cache
 def get_settings():
     
     # Creates and returns a Settings object
     # Due to caching, this object is created only once and reused everywhere
     return Settings()
+
+
+# ✅ ADD THIS (IMPORTANT FIX)
+# Create a global settings object so it can be directly imported
+# Example usage: from app.core.config import settings
+settings = get_settings()
