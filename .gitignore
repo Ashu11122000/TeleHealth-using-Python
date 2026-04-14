@@ -1,2 +1,10 @@
 # virtual environment
 .venv
+
+# environment variables
+.env
+.env.example
+
+# python versions
+.python-versions
+
