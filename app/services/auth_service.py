@@ -1,79 +1,58 @@
-# Import Session to interact with the database
+# Import DB session
 from sqlalchemy.orm import Session
 
-# Import User model (SQLAlchemy table)
-from app.models.user import User
-
-# Import Pydantic schema for user creation
+# Import schemas
 from app.schemas.user import UserCreate
+from app.schemas.auth import UserLogin
 
-# Import security functions (hashing, verification, JWT creation)
+# Import security functions
 from app.core.security import hash_password, verify_password, create_access_token
 
+# Import repository
+from app.repositories.user_repository import UserRepository
 
-# Service class to handle authentication logic
+
+# Create instance of repository
+user_repo = UserRepository()
+
+
 class AuthService:
 
+    # Register user
+    def register_user(self, db: Session, user_data: UserCreate):
 
-    # Static method → does not depend on class instance
-    @staticmethod
-    def register_user(db: Session, user_data: UserCreate):
+        # Check if user already exists
+        existing_user = user_repo.get_user_by_email(db, user_data.email)
 
-        # 🔍 Check if user already exists with same email
-        existing_user = db.query(User).filter(User.email == user_data.email).first()
-
-        # If user exists → stop registration
         if existing_user:
-            raise Exception("Email already registered")
+            raise Exception("User already exists")
 
+        # Hash password
+        hashed_password = hash_password(user_data.password)
 
-        # Hash the plain password before storing
-        hashed_pw = hash_password(user_data.password)
+        # Create user using repository
+        new_user = user_repo.create_user(db, user_data, hashed_password)
 
-
-        # Create new User object (not yet saved to DB)
-        new_user = User(
-            email=user_data.email,        # Assign email
-            hashed_password=hashed_pw     # Store hashed password (NOT plain)
-        )
-
-
-        # Add user to database session
-        db.add(new_user)
-
-        # Commit changes (actually saves to DB)
-        db.commit()
-
-        # Refresh instance (loads updated values like ID from DB)
-        db.refresh(new_user)
-
-
-        # Return created user object
         return new_user
 
 
-    # Static method for login functionality
-    @staticmethod
-    def login_user(db: Session, email: str, password: str):
+    # Login user
+    def login_user(self, db: Session, user_data: UserLogin):
 
-        # 🔍 Find user by email
-        user = db.query(User).filter(User.email == email).first()
+        # Get user from DB
+        user = user_repo.get_user_by_email(db, user_data.email)
 
-        # If user not found → invalid credentials
         if not user:
-            raise Exception("Invalid email or password")
+            raise Exception("Invalid credentials")
 
+        # Verify password
+        if not verify_password(user_data.password, user.hashed_password):
+            raise Exception("Invalid credentials")
 
-        # Verify password (plain vs hashed)
-        if not verify_password(password, user.hashed_password):
-            raise Exception("Invalid email or password")
+        # Generate JWT token
+        token = create_access_token(data={"sub": str(user.id)})
 
-
-        # Create JWT token (sub = subject = user id)
-        token = create_access_token({
-            "sub": str(user.id)
-        })
-
-
-        # Return token (used for authentication)
-        return token
+        return {
+            "access_token": token,
+            "token_type": "bearer"
+        }
