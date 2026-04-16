@@ -1,87 +1,82 @@
-# Import SQLAlchemy session
+# Import Session class from SQLAlchemy ORM
+# Session = database connection object used to interact with DB (executes queries, transactions)
 from sqlalchemy.orm import Session
 
-# Import Appointment model
+# Import Appointment model (ORM model mapped to appointments table in DB)
 from app.models.appointment import Appointment
 
-# Import datetime (for filtering)
-from datetime import datetime
-
-
+# Repository Pattern class:
+# - This class is responsible for handling all database operations related to Appointment
+# Helps in separating database logic from business logic (clean architecture)
 class AppointmentRepository:
-
-    # Create a new appointment
-    def create_appointment(self, db: Session, patient_id: int, doctor_id: int, date_time: datetime):
-        """
-        Create a new appointment in database
-        """
-
-        # Create Appointment object
-        appointment = Appointment(
-            patient_id=patient_id,
-            doctor_id=doctor_id,
-            date_time=date_time,
-            status="scheduled"  # default status
-        )
-
-        # Add to DB
+    
+    # Create method
+    # Used to insert a new appointment into the database
+    # db: Session -> active database session/connection
+    # appointment: Appointment -> ORM object (row to be inserted)
+    def create(self, db: Session, appointment: Appointment):
+        
+        # add() -> stage the object for insertion into DB (does not execute immediately)
         db.add(appointment)
-
-        # Commit changes
+        
+        # commit() -> permanently save changes (Insert query executed here)
+        # Transaction gets committed
         db.commit()
-
-        # Refresh to get updated data
+        
+        # refresh() -> reloads the object from DB
+        # Useful to get auto-generated values (like id, timestamps)
         db.refresh(appointment)
-
+        
+        # return the newly created appointment object
         return appointment
-
-
-    # Get all appointments of a user (patient or doctor)
-    def get_appointments_by_user(self, db: Session, user_id: int):
-        """
-        Fetch all appointments where user is either patient or doctor
-        """
-
+    
+    # GET APPOINTMENTS BY USER
+    # Fetch all appointments where user is either patient or doctor
+    def get_by_user(self, db: Session, user_id: int):
+        
+        # query(Appointment) -> SELECT * FROM appointment
+        # filter() -> applies WHERE conditions
         return db.query(Appointment).filter(
+            
+            # Condition 1: Appointment.patient_id == user_id
+            # Condition 2: Appointment.doctor_id == user_id
+            
+            # | -> OR operator in SQLAlchemy (logical OR)
+            # MEANS: fetch records where user is either patient or doctor
             (Appointment.patient_id == user_id) |
             (Appointment.doctor_id == user_id)
+            
+            # all() -> fetch all matching records as a list
         ).all()
 
+    # CHECK DOCTOR AVAILABILITY
+    # Checks if doctor already has an appointment at given time
+    def check_availability(self, db: Session, doctor_id: int, date_time):
 
-    # Get appointments for a doctor at specific time
-    def get_doctor_appointments_by_time(self, db: Session, doctor_id: int, date_time: datetime):
-        """
-        Used to check availability (service layer will use this)
-        """
-
+        # query(Appointment) → selecting from Appointment table
         return db.query(Appointment).filter(
+
+            # Condition 1: same doctor
             Appointment.doctor_id == doctor_id,
-            Appointment.date_time == date_time
-        ).all()
 
+            # Condition 2: same date and time
+            Appointment.date_time == date_time,
 
-    # Get appointment by ID
-    def get_appointment_by_id(self, db: Session, appointment_id: int):
-        """
-        Fetch a single appointment
-        """
+            # Condition 3: status must be "booked"
+            # Only consider active/booked appointments
+            Appointment.status == "booked"
 
-        return db.query(Appointment).filter(
-            Appointment.id == appointment_id
+        # first() → returns first matching record OR None
+        # Used for existence check (faster than all())
         ).first()
 
 
-    # Update appointment status (cancel, complete, etc.)
-    def update_appointment_status(self, db: Session, appointment_id: int, status: str):
-        """
-        Update appointment status
-        """
+    # DELETE APPOINTMENT
+    # Removes appointment from database
+    def delete(self, db: Session, appointment: Appointment):
 
-        appointment = self.get_appointment_by_id(db, appointment_id)
+        # delete() → marks object for deletion (not executed yet)
+        db.delete(appointment)
 
-        if appointment:
-            appointment.status = status
-            db.commit()
-            db.refresh(appointment)
-
-        return appointment
+        # commit() → executes DELETE query and persists changes
+        db.commit()
