@@ -1,72 +1,97 @@
-# Import Appointment ORM Model (represents appointments table in DB)
+# Importing Appointment model (ORM object)
 from app.models.appointment import Appointment
 
-# Import Repository class (handles DB operations)
+# Importing repository -> handles DB operations
 from app.repositories.appointment_repository import AppointmentRepository
 
-# Service Layer Class
-# This layer contains business logic (rules, validations, workflows)
-# It sits between API (FastAPI routes) and Repository (DB Layer)
+
+# Service layer -> contains business logic
 class AppointmentService:
     
-    # Constructor (Called when object is created)
-    def __init__(self):
+    # Constructor -> receives DB Session
+    def __init__(self, db):
         
-        # creating instance of repository
-        # This allows to interact with database via repo methods
-        self.repo = AppointmentRepository()
+        # Initialize repository with DB Session
+        self.repo = AppointmentRepository(db)
         
-    # Book Appointment Method
-    # Handles logic for creating a new appointment
-    def book_appointment(self, db, patient, doctor_id, date_time):
+    # Method for Book Appointment
+    def book_appointment(self, patient_id, doctor_id, date_time):
         
-        # Step 1: Check availability 
-        # Prevents double booking for same doctor and time
-        existing = self.repo.check_availability(db, doctor_id, date_time)
+        """
+        Create a new appointment with validation
+        """
         
-        # If an appointment already exists -> raise error
+        # Check if doctor already has an appointment at this time
+        existing = self.repo.get_by_doctor_and_time(doctor_id, date_time)
+        
+        # If slot is already booked -> raise error
         if existing:
             
-            # Stop execution and sends error response
+            # Raise error of doctor not available
             raise Exception("Doctor not available at this time")
         
-        # Step 2: Create Appointment object (ORM instance)
-        # This is not saved yet - just a Python object
+        # Create Appointment ORM object
         appointment = Appointment(
             
-            # patient_id -> comes from authenticated user object
-            # Foreign Key mapping (patient_id column in DB)
-            patient_id = patient.id,
+            # Patient booking appointment
+            patient_id = patient_id,
             
-            # doctor_id -> passed from API request
+            # Doctor Assigned
             doctor_id = doctor_id,
             
-            # date_time -> appointment time
-            date_time = date_time
+            # Appointment time
+            date_time = date_time,
+            
+            # Default status
+            status = "booked"            
         )
         
-        # Step 3: Save appointment using repository
-        # Repository handles DB insert logic
-        return self.repo.create(db, appointment)
+        # Save appointment using repository
+        return self.repo.create(appointment)
     
-    # GET APPOINTMENT FOR USER
-    # Fetch all appointments where user is involved (patient or doctor)
-    def get_appointment(self, db, user):
+    # Get appointments for user
+    def get_appointments(self, user):
         
-        # user.id -> unique identifier of logged-in user
-        return self.repo.get_by_user(db, user.id)
+        # Fetch all appointments where user is patient or doctor
+        return self.repo.get_by_user(user.id)
     
-    # CANCEL APPOINTMENT
-    # Soft delete approach (status update instead of removing record)
-    def cancel_appointment(self, db, appointment):
+    # Cancel Appointment (soft delete)
+    def cancel_appointment(self, appointment_id: int):
+        """
+        Cancel appointment by updating status
+        """
         
-        # Update status field instead of deleting from DB
-        # "cancelled" -> business state change
+        # Fetch appointment by ID
+        appointment = self.repo.get_by_id(appointment_id)
+        
+        # If not found -> raise error of "Appointment not found"
+        if not appointment:
+            raise Exception("Appointment not found")
+        
+        # Update status instead of deleting (soft delete pattern)
         appointment.status = "cancelled"
         
-        # commit() -> persist changes to database
-        # Executes UPDATE query
-        db.commit()
+        # Commit changes to DB
+        self.repo.db.commit()
         
-        # Return updated appointment object
+        # Refresh object to get updated state
+        self.repo.db.refresh(appointment)
+        
+        # Return updated appointment
         return appointment
+    
+    # Delete Appointment (hard delete)
+    def delete_appointment(self, appointment_id: int):
+        
+        # Fetch appointment
+        appointment = self.repo.get_by_id(appointment_id)
+        
+        # If not found -> raise error
+        if not appointment:
+            raise Exception("Appointment not found")
+        
+        # Call repository delete method
+        self.repo.delete (appointment)
+        
+        # Return success response
+        return {"message": "Appointment deleted successfully"}
