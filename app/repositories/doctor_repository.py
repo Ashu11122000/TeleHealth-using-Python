@@ -1,98 +1,88 @@
-# Import SQLAlchemy session
-# Session -> used to interact with the database (queries, transactions)
+# Import Session class fro SQLAlchemy ORM
+# Session is used to interact with the database (perform queries, insert, update, delete, transactions)
 from sqlalchemy.orm import Session
 
-# Import DoctorProfile model (mapped to doctor_profiles table)
+# Import DoctorProfile model (ORM class mapped to doctor_profiles table in DB)
 from app.models.doctor_profile import DoctorProfile
 
-# Repository class -> handles all DB Operations for DoctorProfile
+# Repository class (Design Pattern)
+# Repository pattern is used to separate database logic from business logic
 class DoctorRepository:
     
-    # Constructor -> receives DB session (dependency injection)
-    def __init__(self, db: Session):
-        
-        # Store DB session for reuse
-        self.db = db
-
     # Create doctor profile
-    def create(self, user_id: int, specialization: str, experience: int):
-        """
-        Create a doctor profile linked with a user
-        """
+    def create_doctor(
+        # Refers to current instance of the class
+        self,
         
-        # Create ORM object (represents a row in DB)
+        # Database session (used to interact with DB)
+        db: Session,
+        
+        # Foreign Key (link to user table)
+        user_id: int,
+        
+        # Doctor's specialization (e.g., cardiologist)
+        specialization: str,
+        
+        # Years of experience
+        experience: int
+        
+        # Return type (Returns DoctorProfile object)
+    ) -> DoctorProfile:
+        
         doctor = DoctorProfile(
-            
-            # Foreign Key -> links to user table
             user_id=user_id,
-            
-            # Doctor's specialization (e.g., cardiologist)
             specialization=specialization,
-            
-            # Years of experience
             experience=experience
         )
-        
-        # Add object to session (staging for insert)
-        self.db.add(doctor)
-        
-        # Commit transaction -> executes INSERT query
-        self.db.commit()
-        
-        # Refresh object -> fetch updated values from DB (e.g., auto-generated ID)
-        self.db.refresh(doctor)
-        
-        # Return created doctor profile
+
+        db.add(doctor)
+        db.commit()
+        db.refresh(doctor)
+
         return doctor
 
     # Get doctor by ID
-    def get_by_id(self, doctor_id: int):
-        
-        # Query DB -> SELECT * FROM doctor_profiles WHERE id = doctor_id
-        return self.db.query(DoctorProfile).filter(
+    def get_by_id(self, db: Session, doctor_id: int) -> DoctorProfile | None:
+        return db.query(DoctorProfile).filter(
             DoctorProfile.id == doctor_id
-        ).first()    # Returns one record or None
+        ).first()
 
     # Get doctor by user ID
-    def get_by_user_id(self, user_id: int):
-        
-        # Fetch doctor profile linked to a specific user
-        return self.db.query(DoctorProfile).filter(
+    def get_by_user_id(self, db: Session, user_id: int) -> DoctorProfile | None:
+        return db.query(DoctorProfile).filter(
             DoctorProfile.user_id == user_id
         ).first()
 
-    # Get all doctors
-    def get_all(self):
-        # Fetch all doctor records
-        return self.db.query(DoctorProfile).all()
+    # Get all doctors (with optional pagination)
+    def get_all(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 10
+    ):
+        return db.query(DoctorProfile).offset(skip).limit(limit).all()
 
-    # Update doctor profile
-    def update(self, doctor: DoctorProfile, data: dict):
-        """
-        Update doctor profile dynamically
-        """
-        
-        # Loop through input dictionary (key-value pairs)
-        for key, value in data.items():
-            
-            # setattr -> dynamically update attribute
-            # Example: setattr(doctor, "experience", 10)
-            setattr(doctor, key, value)
+    # Update doctor profile (safe update)
+    def update_doctor(
+        self,
+        db: Session,
+        doctor: DoctorProfile,
+        specialization: str | None = None,
+        experience: int | None = None
+    ) -> DoctorProfile:
 
-        # Commit changes -> executes UPDATE query
-        self.db.commit()
-        
-        # Refresh object -> get latest data from DB
-        self.db.refresh(doctor)
+        if specialization is not None:
+            doctor.specialization = specialization
 
-        # Return updated doctor object
+        if experience is not None:
+            doctor.experience = experience
+
+        db.commit()
+        db.refresh(doctor)
+
         return doctor
 
     # Delete doctor profile
-    def delete(self, doctor: DoctorProfile):
-        
-        # Mark object for deletion
-        self.db.delete(doctor)
-        
-        # Commit Transaction -> executes DELETE query
-        self.db.commit()
+    def delete_doctor(self, db: Session, doctor: DoctorProfile) -> None:
+        db.delete(doctor)
+        db.commit()
